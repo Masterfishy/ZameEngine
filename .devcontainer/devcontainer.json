@@ -1,0 +1,22 @@
+{
+    "name": "ZameEngine",
+    "image": "localhost/webgl.dev",
+    "customizations": {
+      "vscode": {
+        "extensions": [
+          "ms-vscode.cpptools",
+          "ms-vscode.cpptools-extension-pack",
+          "ms-vscode.cmake-tools",
+          "xaver.clang-format",
+          "dtoplak.vscode-glsllint"
+        ]
+      }
+    },
+    "mounts": [
+      {
+        "source": "zame-build-volume",
+        "target": "${containerWorkspaceFolder}/build",
+        "type": "volume"
+      }
+    ]
+  }

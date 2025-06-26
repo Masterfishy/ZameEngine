@@ -1,0 +1,20 @@
+FROM docker.io/nginx:alpine
+
+# Install inotify-tools for hot reloads
+RUN apk add --no-cache inotify-tools
+
+# Copy Nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy entrypoint script to detect changes
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Set entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
+
+# Expose port
+EXPOSE 80
+
+# Default command
+CMD ["nginx", "-g", "daemon off;"]
