@@ -1,6 +1,7 @@
 #include "game.hpp"
 
 // ZameEngine includes
+#include <attack_component.hpp>
 #include <component_registry.hpp>
 #include <input_codes.hpp>
 #include <input_component.hpp>
@@ -37,14 +38,19 @@ Aiya::Game::Game(std::unique_ptr<ZameEngine::InputSystem> inputReader,
     ZameEngine::ComponentRegistry<ZameEngine::SpriteComponent>::add(e3, {.textureId = containerTextureId});
 
     ZameEngine::InputComponent inputComponent;
-    inputComponent.up(ZameEngine::InputCode::KEY_W)
-        .down(ZameEngine::InputCode::KEY_S)
-        .left(ZameEngine::InputCode::KEY_A)
-        .right(ZameEngine::InputCode::KEY_D)
-        .attack(ZameEngine::InputCode::MOUSE_CLICK_LEFT);
+    inputComponent.up(ZameEngine::Button::KEY_W)
+        .down(ZameEngine::Button::KEY_S)
+        .left(ZameEngine::Button::KEY_A)
+        .right(ZameEngine::Button::KEY_D)
+        .attack(ZameEngine::Button::MOUSE_CLICK_LEFT);
     ZameEngine::ComponentRegistry<ZameEngine::InputComponent>::add(e1, inputComponent);
 
-    ZameEngine::ComponentRegistry<ZameEngine::WalkComponent>::add(e1, {.walkSpeed = 10});
+    ZameEngine::ComponentRegistry<ZameEngine::WalkComponent>::add(e1, {.speed = 10});
+    ZameEngine::ComponentRegistry<ZameEngine::AttackComponent>::add(e1, {.speed = 50,
+                                                                         .distance = 7,
+                                                                         .stage = ZameEngine::AttackStage::INITIALIZE,
+                                                                         .direction = glm::vec3(0.0f),
+                                                                         .destination = glm::vec3(0.0f)});
 
     mEntities.push_back(std::move(e1));
     mEntities.push_back(std::move(e2));

@@ -1,6 +1,8 @@
 #pragma once
 
+// ZameEngine includes
 #include "entity.hpp"
+#include "input_codes.hpp"
 
 // Emscripten includes
 #include <emscripten/html5.h>
@@ -19,7 +21,7 @@ namespace ZameEngine
 class InputSystem
 {
   public:
-    InputSystem();
+    InputSystem(unsigned int width, unsigned int height);
     ~InputSystem();
 
     bool onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyboardEvent);
@@ -32,10 +34,18 @@ class InputSystem
     void update(const std::vector<Entity> &entities);
 
   private:
-    std::unordered_map<std::string, bool> mInputState;
+    unsigned int mWindowWidth;
+    unsigned int mWindowHeight;
+
+    ButtonField mButtonStates;
 
     glm::vec2 mMousePositionClick;
     glm::vec2 mMousePositionDown;
     glm::vec2 mMousePositionUp;
+
+    Button keyToButton(const std::string &keyCode);
+    Button mouseToButton(unsigned short mouseCode, bool click);
+
+    glm::vec2 screenToWorldPoint(const glm::vec2 &screenPoint);
 };
 } // namespace ZameEngine

@@ -1,6 +1,5 @@
 #include "input_system.hpp"
 #include "component_registry.hpp"
-#include "input_codes.hpp"
 #include "input_component.hpp"
 
 #include <iostream>
@@ -8,53 +7,77 @@
 //-----
 bool onKeyDownCallback(int eventType, const EmscriptenKeyboardEvent *keyboardEvent, void *userData)
 {
+    // std::cout << "Hello, keydown?" << std::endl;
+
     ZameEngine::InputSystem *system = static_cast<ZameEngine::InputSystem *>(userData);
-    return system->onKeyDown(eventType, keyboardEvent);
+    if (system != nullptr)
+    {
+        return system->onKeyDown(eventType, keyboardEvent);
+    }
+
+    return false;
 }
 
 //-----
 bool onKeyUpCallback(int eventType, const EmscriptenKeyboardEvent *keyboardEvent, void *userData)
 {
     ZameEngine::InputSystem *system = static_cast<ZameEngine::InputSystem *>(userData);
-    return system->onKeyUp(eventType, keyboardEvent);
+    if (system != nullptr)
+    {
+        return system->onKeyUp(eventType, keyboardEvent);
+    }
+
+    return false;
 }
 
 //-----
 bool onMouseClickCallback(int eventType, const EmscriptenMouseEvent *mouseEvent, void *userData)
 {
     ZameEngine::InputSystem *system = static_cast<ZameEngine::InputSystem *>(userData);
-    return system->onMouseClick(eventType, mouseEvent);
+    if (system != nullptr)
+    {
+        return system->onMouseClick(eventType, mouseEvent);
+    }
+
+    return false;
 }
 
 //-----
 bool onMouseDownCallback(int eventType, const EmscriptenMouseEvent *mouseEvent, void *userData)
 {
     ZameEngine::InputSystem *system = static_cast<ZameEngine::InputSystem *>(userData);
-    return system->onMouseDown(eventType, mouseEvent);
+    if (system != nullptr)
+    {
+        return system->onMouseDown(eventType, mouseEvent);
+    }
+
+    return false;
 }
 
 //-----
 bool onMouseUpCallback(int eventType, const EmscriptenMouseEvent *mouseEvent, void *userData)
 {
     ZameEngine::InputSystem *system = static_cast<ZameEngine::InputSystem *>(userData);
-    return system->onMouseUp(eventType, mouseEvent);
+    if (system != nullptr)
+    {
+        return system->onMouseUp(eventType, mouseEvent);
+    }
+
+    return false;
 }
 
 //-----
-ZameEngine::InputSystem::InputSystem() : mInputState(), mMousePositionClick(), mMousePositionDown(), mMousePositionUp()
+ZameEngine::InputSystem::InputSystem(unsigned int width, unsigned int height)
+    : mWindowWidth(width), mWindowHeight(height), mButtonStates(), mMousePositionClick(), mMousePositionDown(),
+      mMousePositionUp()
 {
     EMSCRIPTEN_RESULT result;
-    result = emscripten_set_keydown_callback("#canvas", this, 1, onKeyDownCallback);
-    result = emscripten_set_keyup_callback("#canvas", this, 1, onKeyUpCallback);
+    result = emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, this, 1, onKeyDownCallback);
+    result = emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, this, 1, onKeyUpCallback);
+
     result = emscripten_set_click_callback("#canvas", this, 1, onMouseClickCallback);
     result = emscripten_set_mousedown_callback("#canvas", this, 1, onMouseDownCallback);
     result = emscripten_set_mouseup_callback("#canvas", this, 1, onMouseUpCallback);
-
-    mInputState = {{InputCode::KEY_W, false},
-                   {InputCode::KEY_A, false},
-                   {InputCode::KEY_S, false},
-                   {InputCode::KEY_D, false},
-                   {InputCode::MOUSE_CLICK_LEFT, false}};
 }
 
 //-----
@@ -86,39 +109,30 @@ void ZameEngine::InputSystem::update(const std::vector<Entity> &entities)
         InputComponent *entityInput = ComponentRegistry<InputComponent>::get(entity);
         if (entityInput != nullptr)
         {
-            for (const auto &inputState : mInputState)
-            {
-                const auto &entityInputStateIter = entityInput->keyStates.find(inputState.first);
-                if (entityInputStateIter != entityInput->keyStates.end())
-                {
-                    // std::cout << "Set key: " << inputState.first << " to " << inputState.second
-                    //           << " for entity: " << entity.getId() << std::endl;
-                    entityInputStateIter->second = inputState.second;
-                }
-            }
+            entityInput->buttonField = mButtonStates;
 
-            entityInput->mousePosition = mMousePositionClick;
+            if (mButtonStates.get(Button::MOUSE_CLICK_LEFT) || mButtonStates.get(Button::MOUSE_CLICK_MIDDLE) ||
+                mButtonStates.get(Button::MOUSE_CLICK_RIGHT))
+            {
+                entityInput->mouseClickWorldPosition = screenToWorldPoint(mMousePositionClick);
+            }
         }
     }
 
     // Reset MOUSE_CLICK states
-    const auto &mouseClickLeft = mInputState.find(InputCode::MOUSE_CLICK_LEFT);
-    if (mouseClickLeft != mInputState.end() && mouseClickLeft->second)
+    if (mButtonStates.get(Button::MOUSE_CLICK_LEFT))
     {
-        mouseClickLeft->second = false;
-        // std::cout << mouseClickLeft->first << " state: " << mouseClickLeft->second << std::endl;
+        mButtonStates.unset(Button::MOUSE_CLICK_LEFT);
     }
 
-    const auto &mouseClickMiddle = mInputState.find(InputCode::MOUSE_CLICK_MIDDLE);
-    if (mouseClickMiddle != mInputState.end() && mouseClickMiddle->second)
+    if (mButtonStates.get(Button::MOUSE_CLICK_MIDDLE))
     {
-        mouseClickMiddle->second = false;
+        mButtonStates.unset(Button::MOUSE_CLICK_MIDDLE);
     }
 
-    const auto &mouseClickRight = mInputState.find(InputCode::MOUSE_CLICK_RIGHT);
-    if (mouseClickRight != mInputState.end() && mouseClickRight->second)
+    if (mButtonStates.get(Button::MOUSE_CLICK_RIGHT))
     {
-        mouseClickRight->second = false;
+        mButtonStates.unset(Button::MOUSE_CLICK_RIGHT);
     }
 }
 
@@ -126,12 +140,11 @@ void ZameEngine::InputSystem::update(const std::vector<Entity> &entities)
 bool ZameEngine::InputSystem::onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyboardEvent)
 {
     // std::cout << "Key down: " << keyboardEvent->key << " " << keyboardEvent->code << std::endl;
+    // std::cout << "<BEFORE> ButtonStates: " << std::hex << mButtonStates << std::endl;
 
-    const auto &inputStateIter = mInputState.find(keyboardEvent->code);
-    if (inputStateIter != mInputState.end())
-    {
-        inputStateIter->second = true;
-    }
+    mButtonStates.set(keyToButton(keyboardEvent->code));
+
+    // std::cout << "<AFTER> ButtonStates: " << std::hex << mButtonStates << std::endl;
 
     return false;
 }
@@ -141,11 +154,7 @@ bool ZameEngine::InputSystem::onKeyUp(int eventType, const EmscriptenKeyboardEve
 {
     // std::cout << "Key up: " << keyboardEvent->key << " " << keyboardEvent->code << std::endl;
 
-    const auto &inputStateIter = mInputState.find(keyboardEvent->code);
-    if (inputStateIter != mInputState.end())
-    {
-        inputStateIter->second = false;
-    }
+    mButtonStates.unset(keyToButton(keyboardEvent->code));
 
     return false;
 }
@@ -153,17 +162,9 @@ bool ZameEngine::InputSystem::onKeyUp(int eventType, const EmscriptenKeyboardEve
 //-----
 bool ZameEngine::InputSystem::onMouseClick(int eventType, const EmscriptenMouseEvent *mouseEvent)
 {
-    std::string mouseCode = "MOUSE_CLICK_" + std::to_string(mouseEvent->button);
-    const auto &inputStateIter = mInputState.find(mouseCode);
-    if (inputStateIter != mInputState.end())
-    {
-        inputStateIter->second = true;
-        // std::cout << mouseCode << ": " << mouseEvent->button << " state: " << inputStateIter->second << std::endl;
-    }
+    // std::cout << "Mouse click: " << mouseEvent->button << std::endl;
 
-    // std::cout << "target " << mouseEvent->targetX << " " << mouseEvent->targetY << std::endl;
-    // std::cout << "client " << mouseEvent->clientX << " " << mouseEvent->clientY << std::endl;
-    // std::cout << "screen " << mouseEvent->screenX << " " << mouseEvent->screenY << std::endl;
+    mButtonStates.set(mouseToButton(mouseEvent->button, true));
 
     // Convert canvas mouse position to world position
 
@@ -175,15 +176,12 @@ bool ZameEngine::InputSystem::onMouseClick(int eventType, const EmscriptenMouseE
 //-----
 bool ZameEngine::InputSystem::onMouseDown(int eventType, const EmscriptenMouseEvent *mouseEvent)
 {
-    std::string mouseCode = "MOUSE_" + std::to_string(mouseEvent->button);
-    const auto &inputStateIter = mInputState.find(mouseCode);
-    if (inputStateIter != mInputState.end())
-    {
-        inputStateIter->second = true;
-        // std::cout << mouseCode << ": " << mouseEvent->button << " state: " << inputStateIter->second << std::endl;
-    }
+    // std::cout << "<BEFORE> ButtonStates: " << std::hex << mButtonStates << std::endl;
 
-    mMousePositionDown = glm::vec2(mouseEvent->clientX, mouseEvent->clientY);
+    mButtonStates.set(mouseToButton(mouseEvent->button, false));
+
+    // std::cout << "<AFTER> ButtonStates: " << std::hex << mButtonStates << std::endl;
+    mMousePositionDown = glm::vec2(mouseEvent->targetX, mouseEvent->targetY);
 
     return false;
 }
@@ -191,15 +189,71 @@ bool ZameEngine::InputSystem::onMouseDown(int eventType, const EmscriptenMouseEv
 //-----
 bool ZameEngine::InputSystem::onMouseUp(int eventType, const EmscriptenMouseEvent *mouseEvent)
 {
-    std::string mouseCode = "MOUSE_" + std::to_string(mouseEvent->button);
-    const auto &inputStateIter = mInputState.find(mouseCode);
-    if (inputStateIter != mInputState.end())
-    {
-        inputStateIter->second = false;
-        // std::cout << mouseCode << ": " << mouseEvent->button << " state: " << inputStateIter->second << std::endl;
-    }
+    // std::cout << "<BEFORE> ButtonStates: " << std::hex << mButtonStates << std::endl;
 
-    mMousePositionUp = glm::vec2(mouseEvent->clientX, mouseEvent->clientY);
+    mButtonStates.unset(mouseToButton(mouseEvent->button, false));
+
+    // std::cout << "<AFTER> ButtonStates: " << std::hex << mButtonStates << std::endl;
+    mMousePositionUp = glm::vec2(mouseEvent->targetX, mouseEvent->targetY);
 
     return false;
+}
+
+//-----
+ZameEngine::Button ZameEngine::InputSystem::keyToButton(const std::string &keyCode)
+{
+    if (keyCode == "KeyW")
+    {
+        return Button::KEY_W;
+    }
+    else if (keyCode == "KeyA")
+    {
+        return Button::KEY_A;
+    }
+    else if (keyCode == "KeyS")
+    {
+        return Button::KEY_S;
+    }
+    else if (keyCode == "KeyD")
+    {
+        return Button::KEY_D;
+    }
+    else
+    {
+        return Button::UNKNOWN;
+    }
+}
+
+//-----
+ZameEngine::Button ZameEngine::InputSystem::mouseToButton(unsigned short mouseCode, bool click)
+{
+    switch (mouseCode)
+    {
+    case 0:
+        return click ? Button::MOUSE_CLICK_LEFT : Button::MOUSE_DOWN_LEFT;
+    case 1:
+        return click ? Button::MOUSE_CLICK_MIDDLE : Button::MOUSE_DOWN_MIDDLE;
+    case 2:
+        return click ? Button::MOUSE_CLICK_RIGHT : Button::MOUSE_DOWN_RIGHT;
+    default:
+        return Button::UNKNOWN;
+    }
+}
+
+//-----
+glm::vec2 ZameEngine::InputSystem::screenToWorldPoint(const glm::vec2 &screenPoint)
+{
+    float windowRatio = static_cast<float>(mWindowHeight) / static_cast<float>(mWindowWidth);
+    float halfWindowWidth = static_cast<float>(mWindowWidth) / 2.0f;
+    float halfWindowHeight = static_cast<float>(mWindowHeight) / 2.0f;
+
+    glm::vec2 worldPoint;
+
+    worldPoint.x = (screenPoint.x - halfWindowWidth) * (10.0f / halfWindowWidth);
+    worldPoint.y = -1 * (screenPoint.y - halfWindowHeight) * (10.0f / halfWindowHeight) * windowRatio;
+
+    std::cout << "Screen point: " << screenPoint.x << " " << screenPoint.y << "\nWorld point: " << worldPoint.x << " "
+              << worldPoint.y << std::endl;
+
+    return worldPoint;
 }

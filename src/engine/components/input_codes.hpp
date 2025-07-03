@@ -4,21 +4,43 @@
 
 namespace ZameEngine
 {
-namespace InputCode
+enum Button
 {
-// Keys
-const static std::string KEY_W = "KeyW";
-const static std::string KEY_A = "KeyA";
-const static std::string KEY_S = "KeyS";
-const static std::string KEY_D = "KeyD";
+    UNKNOWN = 0,
 
-// Mouse
-const static std::string MOUSE_LEFT = "MOUSE_0";
-const static std::string MOUSE_MIDDLE = "MOUSE_1";
-const static std::string MOUSE_RIGHT = "MOUSE_2";
+    // Keys
+    KEY_W,
+    KEY_A,
+    KEY_S,
+    KEY_D,
 
-const static std::string MOUSE_CLICK_LEFT = "MOUSE_CLICK_0";
-const static std::string MOUSE_CLICK_MIDDLE = "MOUSE_CLICK_1";
-const static std::string MOUSE_CLICK_RIGHT = "MOUSE_CLICK_2";
-} // namespace InputCode
+    // Mouse
+    MOUSE_DOWN_LEFT,
+    MOUSE_DOWN_MIDDLE,
+    MOUSE_DOWN_RIGHT,
+
+    MOUSE_CLICK_LEFT,
+    MOUSE_CLICK_MIDDLE,
+    MOUSE_CLICK_RIGHT
+};
+
+struct ButtonField
+{
+    unsigned int mField = 0;
+
+    void set(Button button)
+    {
+        mField |= 1 << button;
+    }
+
+    void unset(Button button)
+    {
+        mField &= ~(1 << button);
+    }
+
+    unsigned int get(Button button) const
+    {
+        return (mField & (1 << button)) >> button;
+    }
+};
 } // namespace ZameEngine

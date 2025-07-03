@@ -4,6 +4,6 @@ namespace ZameEngine
 {
 struct WalkComponent
 {
-    float walkSpeed;
+    float speed;
 };
 } // namespace ZameEngine

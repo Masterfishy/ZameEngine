@@ -29,7 +29,7 @@ int main()
 
     auto program = std::make_unique<ZameEngine::ShaderProgram>("shaders/vertex.glsl", "shaders/fragment.glsl");
     auto renderer = std::make_unique<ZameEngine::RenderSystem>(std::move(window), std::move(program));
-    auto inputReader = std::make_unique<ZameEngine::InputSystem>();
+    auto inputReader = std::make_unique<ZameEngine::InputSystem>(800, 600);
     auto walkSystem = std::make_unique<ZameEngine::WalkSystem>();
     auto attackSystem = std::make_unique<ZameEngine::AttackSystem>();
 

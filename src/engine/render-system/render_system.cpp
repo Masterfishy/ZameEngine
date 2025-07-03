@@ -64,8 +64,10 @@ void ZameEngine::RenderSystem::render(std::vector<ZameEngine::Entity> &entities)
 
     glBindVertexArray(VAO);
 
-    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -10.0f));
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), mWindow->getWindowRatio(), 0.1f, 100.0f);
+    float units = 10;
+    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    glm::mat4 projection = glm::ortho<float>(-units, units, -units * mWindow->getAspectRatio(),
+                                             units * mWindow->getAspectRatio(), -1, 100);
 
     for (Entity &entity : entities)
     {

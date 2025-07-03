@@ -1,7 +1,12 @@
 #pragma once
 
+// ZameEngine includes
+#include "input_codes.hpp"
+
+// GLM includes
 #include <glm/glm.hpp>
 
+// System includes
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -11,87 +16,79 @@ namespace ZameEngine
 struct InputComponent
 {
   public:
-    glm::vec2 mousePosition;
-    std::unordered_map<std::string, bool> keyStates;
+    glm::vec2 mouseClickWorldPosition;
+    ButtonField buttonField;
 
-    bool up() const
+    unsigned int up() const
     {
-        return getInputState(upKeyCode);
+        return getButtonState(upButtonBinding);
     }
 
-    InputComponent &up(const std::string &keyCode)
+    InputComponent &up(Button button)
     {
-        return setInputState(&upKeyCode, keyCode);
+        return setButtonState(upButtonBinding, button);
     }
 
-    bool down() const
+    unsigned int down() const
     {
-        return getInputState(downKeyCode);
+        return getButtonState(downButtonBinding);
     }
 
-    InputComponent &down(const std::string &keyCode)
+    InputComponent &down(Button button)
     {
-        return setInputState(&downKeyCode, keyCode);
+        return setButtonState(downButtonBinding, button);
     }
 
-    bool left() const
+    unsigned int left() const
     {
-        return getInputState(leftKeyCode);
+        return getButtonState(leftButtonBinding);
     }
 
-    InputComponent &left(const std::string &keyCode)
+    InputComponent &left(Button button)
     {
-        return setInputState(&leftKeyCode, keyCode);
+        return setButtonState(leftButtonBinding, button);
     }
 
-    bool right() const
+    unsigned int right() const
     {
-        return getInputState(rightKeyCode);
+        return getButtonState(rightButtonBinding);
     }
 
-    InputComponent &right(const std::string &keyCode)
+    InputComponent &right(Button button)
     {
-        return setInputState(&rightKeyCode, keyCode);
+        return setButtonState(rightButtonBinding, button);
     }
 
-    bool attack() const
+    unsigned int attack() const
     {
-        return getInputState(attackKeyCode);
+        return getButtonState(attackButtonBinding);
     }
 
-    InputComponent &attack(const std::string &keyCode)
+    InputComponent &attack(Button button)
     {
-        return setInputState(&attackKeyCode, keyCode);
+        return setButtonState(attackButtonBinding, button);
     }
 
   private:
-    std::string upKeyCode;
-    std::string downKeyCode;
-    std::string leftKeyCode;
-    std::string rightKeyCode;
-    std::string attackKeyCode;
+    Button upButtonBinding;
+    Button downButtonBinding;
+    Button leftButtonBinding;
+    Button rightButtonBinding;
+    Button attackButtonBinding;
 
-    bool getInputState(const std::string &keyCode) const
+    bool getButtonState(Button button) const
     {
-        const auto &keyStateIter = keyStates.find(keyCode);
-        if (keyStateIter != keyStates.end())
-        {
-            return keyStateIter->second;
-        }
-
-        return false;
+        return buttonField.get(button);
     }
 
-    InputComponent &setInputState(std::string *keyCode, const std::string &newCode)
+    InputComponent &setButtonState(Button &buttonBinding, Button newButton)
     {
-        // std::cout << "Setting: " << *keyCode << " to: " << newCode << std::endl;
-        if (keyCode != nullptr)
-        {
-            keyStates.erase(*keyCode);
+        // Reset the old button state
+        buttonField.unset(buttonBinding);
 
-            *keyCode = newCode;
-            keyStates[*keyCode] = false;
-        }
+        // Set the new button state
+        buttonBinding = newButton;
+        buttonField.set(buttonBinding);
 
         return *this;
     }

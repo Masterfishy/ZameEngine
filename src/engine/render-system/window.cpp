@@ -66,7 +66,19 @@ void ZameEngine::Window::endDraw()
 }
 
 //-----
-float ZameEngine::Window::getWindowRatio() const
+unsigned int ZameEngine::Window::getWidth() const
 {
-    return static_cast<float>(mWidth) / static_cast<float>(mHeight);
+    return mWidth;
+}
+
+//-----
+unsigned int ZameEngine::Window::getHeight() const
+{
+    return mHeight;
+}
+
+//-----
+float ZameEngine::Window::getAspectRatio() const
+{
+    return static_cast<float>(mHeight) / static_cast<float>(mWidth);
 }

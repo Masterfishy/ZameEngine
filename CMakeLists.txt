@@ -5,6 +5,8 @@ project(Aiya)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(BUILD_TESTS OFF)
+
 # Retreive GLM package
 include(FetchContent)
 
@@ -89,3 +91,52 @@ add_dependencies(${PROJECT_NAME} copy_resources)
 set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
 )
+
+#-----------------------------------------------------------------------------#
+# Tests                                                                       #
+#-----------------------------------------------------------------------------#
+if (BUILD_TESTS)
+    # Emscripten specific configuration for testing
+    set(EMSCRIPTEN_LINK_FLAGS
+        "-s USE_WEBGL2=1"
+        "-s FULL_ES3=1"
+        "-s MIN_WEBGL_VERSION=2"
+        "-s MAX_WEBGL_VERSION=2"
+        "-s ALLOW_MEMORY_GROWTH=1"
+        "-s NO_EXIT_RUNTIME=1"
+        "--bind"
+        "-s USE_GLFW=3"
+        # Flags for asset loading
+        # "-s FETCH=1"
+        # "-s ASYNCIFY=1"
+        "--preload-file shaders"
+        "--preload-file textures"
+        # Flags for audio support
+        # "-s USE_SDL=2"
+        # "-s USE_SDL_MIXER=2"
+    )
+    string(JOIN " " EMSCRIPTEN_LINK_FLAGS_STR ${EMSCRIPTEN_LINK_FLAGS})
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EMSCRIPTEN_LINK_FLAGS_STR}")
+
+    # Unset output file extensions
+    unset(CMAKE_EXECUTABLE_SUFFIX)
+
+    FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+    )
+    # For Windows: Prevent overriding the parent project's compiler/linker settings
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+
+    enable_testing()
+
+    add_executable(InputComponentTest tests/input_component_test.cpp)
+    add_test(NAME InputComponentTest
+            COMMAND InputComponentTest
+    )
+
+    target_link_libraries(InputComponentTest PRIVATE ZameEngine
+                                                    GTest::gtest_main
+    )
+endif()

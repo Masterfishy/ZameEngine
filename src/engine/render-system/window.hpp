@@ -17,7 +17,10 @@ class Window
     bool initialize(unsigned int width, unsigned int height, const std::string &windowName);
     void startDraw();
     void endDraw();
-    float getWindowRatio() const;
+
+    unsigned int getWidth() const;
+    unsigned int getHeight() const;
+    float getAspectRatio() const;
 
   private:
     bool mInitialized;
